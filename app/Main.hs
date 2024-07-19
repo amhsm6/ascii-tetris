@@ -4,7 +4,9 @@ module Main where
 
 import Control.Monad
 import Control.Monad.State
+import Control.Monad.Writer
 import Control.Lens
+import Data.Monoid
 import Data.Time.Clock.POSIX
 import qualified Data.Vector as V
 import System.Random
@@ -117,12 +119,12 @@ recalc = do
 
 check :: Action Bool
 check = do
-    dat <- use $ _figure . _Just . _dat
-    hits <- V.forM dat $ \(x, y) -> do
+    s <- get
+    hit <- execWriterT $ forMOf_ (_figure . _Just . _dat . traverse) s $ \(x, y) -> do
         hit <- use $ pre (_field . ix y . ix x) . non False
-        pure $ hit || x < 0 || x >= fieldWidth || y < 0
+        tell $ Any $ hit || x < 0 || x >= fieldWidth || y < 0
 
-    pure $ V.or hits
+    pure $ getAny hit
 
 input :: Action (Maybe Input)
 input = do
@@ -168,19 +170,16 @@ process Rotate = do
     when hit $ _figure .= fig
 
 process ThrowDown = do
-    _figure . _Just . _pos . _2 .= 0
-    recalc
-
-    let fix = do
+    let drop = do
             hit <- check
-            when hit $ do
-                _figure . _Just . _dat . traverse . _2 += 1
-                fix
-    fix
+            unless hit $ do
+                _figure . _Just . _dat . traverse . _2 -= 1
+                drop
+    drop
 
     s <- get
     forMOf_ (_figure . _Just . _dat . traverse) s $ \(x, y) -> do
-        _field . ix y . ix x .= True
+        _field . ix (y + 1) . ix x .= True
 
     _figure .= Nothing
 
