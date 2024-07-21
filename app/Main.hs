@@ -104,18 +104,14 @@ figureData T RotLeft = V.fromList [(0, -1), (0, 0), (1, 0), (0, 1)]
 
 recalc :: Action ()
 recalc = do
-    s <- get
-    when (has (_figure . _Just) s) $ do
-        s <- get
-        let typ = s ^?! _figure . _Just . _typ
-            rot = s ^?! _figure . _Just . _rot
-            dx = s ^?! _figure . _Just . _pos . _1
-            dy = s ^?! _figure . _Just . _pos . _2
+    zoom (_figure . _Just) $ do
+        typ <- use _typ
+        rot <- use _rot
+        _dat .= figureData typ rot
 
-        _figure . _Just . _dat .= figureData typ rot
-
-        _figure . _Just . _dat . traverse . _1 += dx
-        _figure . _Just . _dat . traverse . _2 += dy
+        (dx, dy) <- use _pos
+        _dat . traverse . _1 += dx
+        _dat . traverse . _2 += dy
 
 check :: Action Bool
 check = do
@@ -124,7 +120,7 @@ check = do
         hit <- use $ pre (_field . ix y . ix x) . non False
         tell $ Any $ hit || x < 0 || x >= fieldWidth || y < 0
 
-    pure $ getAny hit
+    pure $ hit ^. _Wrapped
 
 input :: Action (Maybe Input)
 input = do
