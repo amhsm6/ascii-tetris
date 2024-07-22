@@ -209,7 +209,7 @@ update = do
         _figure .= Nothing
 
     s <- get
-    forMOf_ (backwards $ _field . indexing traverse . filtered V.and . asIndex) s $ \i -> do
+    forMOf_ (backwards $ _field . itraversed . filtered V.and . asIndex) s $ \i -> do
         forM_ [i..fieldHeight-1] $ \j -> do
             row <- use $ pre (_field . ix (j + 1)) . non (V.replicate fieldWidth False)
             _field . ix j .= row
@@ -228,7 +228,7 @@ draw = do
         _image . ix y' . ix x' .= True
 
     s <- get
-    iforMOf_ (_field . indexing traverse <.> indexing traverse) s $ \(y, x) c -> do
+    iforMOf_ (_field . itraversed <.> itraversed) s $ \(y, x) c -> do
         let x' = fieldBaseX + 1 + x
             y' = fieldBaseY - 1 - y
         _image . ix y' . ix x' ||= c
@@ -238,7 +238,7 @@ draw = do
         w <- defaultWindow
         updateWindow w $ do
             moveCursor 0 0
-            iforMOf_ (_image . indexing traverse <.> indexing traverse) s $ \(y, x) c -> do
+            iforMOf_ (_image . itraversed <.> itraversed) s $ \(y, x) c -> do
                 unless (x == 119 && y == 29) $ if c then drawString "*" else drawString " "
         render
 
